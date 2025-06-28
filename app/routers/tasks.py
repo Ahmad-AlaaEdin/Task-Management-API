@@ -9,7 +9,7 @@ from app.crud.task import (
     get_task,
     update_task,
     delete_task,
-    count_tasks,
+    count_tasks,get_tasks_by_priority,get_tasks_by_status
 )
 from datetime import datetime, timezone
 from typing import Optional
@@ -42,6 +42,24 @@ def read(task_id: int, session: Session = Depends(get_session)):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+@router.get("/status/{status}", response_model=list[TaskResponse])
+def read_by_status(status: TaskStatus, session: Session = Depends(get_session)):
+    tasks = get_tasks_by_status(session, status=status)
+    if not tasks:
+        raise HTTPException(status_code=404, detail="No tasks found with this status")
+    return tasks
+
+
+@router.get("/priority/{priority}", response_model=list[TaskResponse])
+def read_by_priority(
+    priority: TaskPriority, session: Session = Depends(get_session) 
+):
+    tasks = get_tasks_by_priority(session, priority=priority)
+    if not tasks:
+        raise HTTPException(status_code=404, detail="No tasks found with this priority")
+    return tasks
 
 
 @router.patch("/{task_id}", response_model=TaskResponse)

@@ -2,6 +2,10 @@ from sqlmodel import Session, select
 from app.models.task import Task
 from sqlalchemy import func
 from typing import List
+from app.models.task import TaskStatus, TaskPriority
+
+
+
 def create_task(task: Task, session: Session) -> Task:
     session.add(task)
     session.commit()
@@ -31,3 +35,11 @@ def delete_task(session: Session, task_id: int) -> bool:
         session.commit()
         return True
     return False
+
+
+def get_tasks_by_status(session: Session, status: TaskStatus) -> List[Task]:
+    return session.exec(select(Task).where(Task.status == status)).all()
+
+
+def get_tasks_by_priority(session: Session, priority: TaskPriority) -> List[Task]:
+    return session.exec(select(Task).where(Task.priority == priority)).all()
