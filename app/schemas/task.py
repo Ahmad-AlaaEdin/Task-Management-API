@@ -2,8 +2,10 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from app.models.task import TaskStatus, TaskPriority
-from pydantic import field_validator
+from pydantic import field_validator, ConfigDict
 from datetime import timezone
+from typing import List
+
 class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
@@ -11,6 +13,7 @@ class TaskCreate(BaseModel):
     priority: Optional[TaskPriority] = None
     due_date: Optional[datetime] = None
     assigned_to: Optional[str] = None
+
     @field_validator("title")
     @classmethod
     def validate_title(cls, value: str) -> str:
@@ -34,6 +37,7 @@ class TaskUpdate(BaseModel):
     due_date: Optional[datetime] = None
     assigned_to: Optional[str] = None
 
+
 class TaskResponse(BaseModel):
     id: int
     title: str
@@ -45,5 +49,11 @@ class TaskResponse(BaseModel):
     due_date: Optional[datetime]
     assigned_to: Optional[str]
 
-    class Config:
-        orm_mode = True
+
+class PaginatedTaskResponse(BaseModel):
+    total: int
+    skip: int
+    limit: int
+    data: List[TaskResponse]
+
+    model_config = ConfigDict(from_attributes=True)

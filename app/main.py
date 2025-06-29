@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from app.db.database import init_db
 from app.routers import tasks
 from fastapi.exceptions import RequestValidationError
-from .exceptions import validation_exception_handler
+from .core.exceptions import validation_exception_handler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,9 +27,5 @@ def health():
 
 app.include_router(tasks.router)
 
-def not_found(request: Request, exc: Exception):
-    return JSONResponse(
-        status_code=HTTP_404_NOT_FOUND,
-        content={"detail": "Not Found"},
-    )
+
 

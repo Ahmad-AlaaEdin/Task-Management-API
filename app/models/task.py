@@ -3,7 +3,6 @@ from sqlmodel import SQLModel, Field
 from typing import Optional
 from enum import Enum
 from sqlalchemy import text
-from pydantic import field_validator
 
 
 class TaskStatus(str, Enum):

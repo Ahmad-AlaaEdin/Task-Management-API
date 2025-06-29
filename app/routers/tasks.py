@@ -2,16 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
 from app.db.database import get_session
 from app.models.task import Task, TaskStatus, TaskPriority
-from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
+from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, PaginatedTaskResponse
 from app.crud.task import (
     create_task,
     get_tasks,
     get_task,
     update_task,
     delete_task,
-    count_tasks,get_tasks_by_priority,get_tasks_by_status
+    count_tasks,
+    get_tasks_by_priority,
+    get_tasks_by_status,
+    get_tasks_by_status_and_priority,
 )
-from datetime import datetime, timezone
 from typing import Optional
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
@@ -23,17 +25,25 @@ def create(task_data: TaskCreate, session: Session = Depends(get_session)):
     return create_task(task, session)
 
 
-@router.get("/", response_model=list[TaskResponse])
+@router.get(
+    "/",
+    response_model=PaginatedTaskResponse,
+    summary="Get all tasks with pagination",
+)
 def read_all(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
-    status: Optional[TaskStatus] = None,
-    priority: Optional[TaskPriority] = None,
+    skip: int = Query(0, ge=0, description="Number of items to skip"),
+    limit: int = Query(
+        10, ge=1, le=100, description="Maximum number of items to return"
+    ),
     session: Session = Depends(get_session),
 ):
-    count = count_tasks(session)
-    print(count)
-    return get_tasks(session, skip=skip, limit=limit)
+
+    total = count_tasks(session)
+    tasks = get_tasks(session, skip=skip, limit=limit)
+
+    if not tasks:
+        raise HTTPException(status_code=404, detail="No tasks found with given filters")
+    return {"total": total, "skip": skip, "limit": limit, "data": tasks}
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
@@ -53,9 +63,7 @@ def read_by_status(status: TaskStatus, session: Session = Depends(get_session)):
 
 
 @router.get("/priority/{priority}", response_model=list[TaskResponse])
-def read_by_priority(
-    priority: TaskPriority, session: Session = Depends(get_session) 
-):
+def read_by_priority(priority: TaskPriority, session: Session = Depends(get_session)):
     tasks = get_tasks_by_priority(session, priority=priority)
     if not tasks:
         raise HTTPException(status_code=404, detail="No tasks found with this priority")
@@ -68,7 +76,7 @@ def update(task_id: int, updates: TaskUpdate, session: Session = Depends(get_ses
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    update_data = updates.dict(exclude_unset=True)
+    update_data = updates.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(task, key, value)
 
